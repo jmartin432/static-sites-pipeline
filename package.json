@@ -6,9 +6,9 @@
   "private": true,
   "scripts": {
     "test": "mocha",
-    "updateStack": "sh ./scripts/update-stack.sh",
+    "updateStack": "sh templates/update-stack.sh",
     "createStack": "sh scripts/create-stack.sh",
-    "deleteStack": "sh ./scripts/deleteStack.sh",
+    "deleteStack": "sh ./scripts/delete-stack.sh",
     "describeStack": "sh ./scripts/describeStack.sh",
     "uploadFiles": "sh ./scripts/uploadFiles.sh",
     "createAdditionalDns": "sh ./scripts/additionalDnsRecords.sh"

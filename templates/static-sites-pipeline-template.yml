@@ -9,7 +9,7 @@ Parameters:
     Type: String
   AccountId:
     Type: String
-    Default: '{{resolve:ssm:Account-ID:1}}'
+    Default: '{{resolve:ssm:account-id:1}}'
   BranchName:
     Description: github branch name
     Type: String
@@ -33,12 +33,15 @@ Parameters:
   LambdasBucketName:
     Type: String
     Default: '{{resolve:ssm:static-sites-pipeline-lambdas-bucket:1}}'
+  SlackWebHookPath:
+    Type: String
+    Default: '{{resolve:secretsmanager:slack-webhook-paths:SecretString:static-sites-pipeline:1}}'
 
 Resources:
 
 # Buckets
 
-  StaticSitesArtifactStoreBucket:
+  ArtifactStoreBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref ArtifactBucketName
@@ -49,7 +52,7 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
 
-  StaticSitesDeploymentBucket:
+  DeploymentBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref DeploymentBucketName
@@ -60,7 +63,7 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
 
-  StaticSitesLambdasBucket:
+  LambdasBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref LambdasBucketName
@@ -73,16 +76,16 @@ Resources:
 
 # Log Groups
 
-  StaticSitesPipelineLogGroup:
+  PipelineLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: static-sites-pipeline-log-group
       RetentionInDays: 14
 
-  PortfolioCodeBuildLogStream:
+  PortfolioBuildLogStream:
     Type: AWS::Logs::LogStream
     Properties:
-      LogGroupName: !Ref StaticSitesPipelineLogGroup
+      LogGroupName: !Ref PipelineLogGroup
       LogStreamName: static-sites-portfolio-codebuild-log-stream
 
 #  CodeBuildSNSTopic:
@@ -120,10 +123,10 @@ Resources:
 
 # Rules
 
-  StaticSitesCodeBuildRule:
+  CodeBuildSuccessRule:
     Type: AWS::Events::Rule
     Properties:
-      Description: Static Sites CodeBuild Rule for Triggering Lambda
+      Description: Static Sites Events Rule for CodeBuild Success
       EventPattern:
         source:
           - aws.codebuild
@@ -132,14 +135,32 @@ Resources:
         detail:
           build-status:
             - SUCCEEDED
-      Name: static-sites-pipleline-codebuild-rule
-      RoleArn: !GetAtt StaticSitesCodebuildRuleRole.Arn
+      Name: static-sites-pipleline-codebuild-success-rule
+      RoleArn: !GetAtt EventsRuleRole.Arn
       State: ENABLED
       Targets:
-        - Arn: !GetAtt StaticSitesPipelineDeployLambda.Arn
+        - Arn: !GetAtt DeployLambda.Arn
           Id: deploy_lambda
     DependsOn:
-      - StaticSitesPipelineDeployLambda
+      - DeployLambda
+
+  CodeBuildStateChangeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Static Sites Events Rule for CodeBuild State Change
+      EventPattern:
+        source:
+          - aws.codebuild
+        detail-type:
+          - CodeBuild Build State Change
+      Name: static-sites-pipleline-codebuild-state-change-rule
+      RoleArn: !GetAtt EventsRuleRole.Arn
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt SlackRouterLambda.Arn
+          Id: slack_router_lambda
+    DependsOn:
+      - SlackRouterLambda
 
 # CodeBuild
 
@@ -147,7 +168,7 @@ Resources:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: portfolio-codebuild
-      ServiceRole: !GetAtt StaticSitesCodeBuildServiceRole.Arn
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       BadgeEnabled: false
       Description: Portfolio CodeBuild
       Source:
@@ -182,14 +203,14 @@ Resources:
         Webhook: true
       LogsConfig:
         CloudWatchLogs:
-          GroupName: !Ref StaticSitesPipelineLogGroup
-          StreamName: !Ref PortfolioCodeBuildLogStream
+          GroupName: !Ref PipelineLogGroup
+          StreamName: !Ref PortfolioBuildLogStream
           Status: ENABLED
       TimeoutInMinutes: 5
 
 # Lambdas
 
-  StaticSitesPipelineDeployLambda:
+  DeployLambda:
     Type: AWS::Lambda::Function
     Properties:
       Code:
@@ -202,27 +223,56 @@ Resources:
           DeployBucket: !Ref DeploymentBucketName
       Handler: deploy-lambda.handler
       MemorySize: 128
-      Role: !GetAtt StaticSitesPipelineLambdaRole.Arn
+      Role: !GetAtt LambdaRole.Arn
       Runtime: python3.8
       Timeout: 5
       Description: Deploys Artifacts to S3 Deploy Bucket
     DependsOn:
-      - StaticSitesPipelineLambdaRole
+      - LambdaRole
 
-  CodeBuildEventLambdaPermission:
+  DeployLambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: 'lambda:InvokeFunction'
-      FunctionName: !Ref StaticSitesPipelineDeployLambda
+      FunctionName: !Ref DeployLambda
       Principal: 'events.amazonaws.com'
-      SourceArn: !GetAtt StaticSitesCodeBuildRule.Arn
+      SourceArn: !GetAtt CodeBuildSuccessRule.Arn
     DependsOn:
-      - StaticSitesPipelineDeployLambda
+      - DeployLambda
+
+  SlackRouterLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref LambdasBucketName
+        S3Key: !Sub ${TimeStamp}/lambdas.zip
+      FunctionName: !Sub static-sites-pipeline-slack-router-lambda-${TimeStamp}
+      Environment:
+        Variables:
+          SlackWebHookPath: !Ref SlackWebHookPath
+      Handler: slack-router-lambda.handler
+      MemorySize: 128
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.8
+      Timeout: 5
+      Description: Sends Pipeline Slack Notifications
+    DependsOn:
+      - LambdaRole
+
+  SlackRouterLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref SlackRouterLambda
+      Principal: 'events.amazonaws.com'
+      SourceArn: !GetAtt CodeBuildStateChangeRule.Arn
+    DependsOn:
+      - SlackRouterLambda
 
 
 # Roles
 
-  StaticSitesCodeBuildServiceRole:
+  CodeBuildServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: static-sites-pipeline-codebuild-role
@@ -244,42 +294,42 @@ Resources:
                   -  'logs:CreateLogStream'
                   -  'logs:PutLogEvents'
                 Resource: '*'
-              - Effect: Allow
-                Action:
-                  - 'devicefarm:ListProjects'
-                  - 'devicefarm:ListDevicePools'
-                  - 'devicefarm:GetRun'
-                  - 'devicefarm:GetUpload'
-                  - 'devicefarm:CreateUpload'
-                  - 'devicefarm:ScheduleRun'
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - 'lambda:InvokeFunction'
-                  - 'lambda:ListFunctions'
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - 'iam:PassRole'
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - 'ec2:*'
-                  - 'elasticloadbalancing:*'
-                  - 'autoscaling:*'
-                  - 'cloudwatch:*'
-                  - 's3:*'
-                  - 'sns:*'
-                  - 'cloudformation:*'
-                  - 'rds:*'
-                  - 'sqs:*'
-                  - 'ecs:*'
-                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'devicefarm:ListProjects'
+#                  - 'devicefarm:ListDevicePools'
+#                  - 'devicefarm:GetRun'
+#                  - 'devicefarm:GetUpload'
+#                  - 'devicefarm:CreateUpload'
+#                  - 'devicefarm:ScheduleRun'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'lambda:InvokeFunction'
+#                  - 'lambda:ListFunctions'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'iam:PassRole'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'ec2:*'
+#                  - 'elasticloadbalancing:*'
+#                  - 'autoscaling:*'
+#                  - 'cloudwatch:*'
+#                  - 's3:*'
+#                  - 'sns:*'
+#                  - 'cloudformation:*'
+#                  - 'rds:*'
+#                  - 'sqs:*'
+#                  - 'ecs:*'
+#                Resource: '*'
 
-  StaticSitesPipelineLambdaRole:
+  LambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: static-sites-pipeline-deploy-lambda-role
+      RoleName: static-sites-pipeline-lambda-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -290,7 +340,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: static-sites-pipeline-deploy-lambda-policy
+        - PolicyName: static-sites-pipeline-lambda-policy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -312,10 +362,10 @@ Resources:
                   - !Sub arn:aws:s3:::${ArtifactBucketName}/*
       Path: "/"
 
-  StaticSitesCodebuildRuleRole:
+  EventsRuleRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: static-sites-pipeline-codebuild-rule-role
+      RoleName: static-sites-pipeline-events-rule-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -326,7 +376,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: static-sites-pipeline-codebuild-rule-policy
+        - PolicyName: static-sites-pipeline-events-rule-policy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -342,9 +392,9 @@ Resources:
 Outputs:
   LatestTimeStamp:
     Value: !Ref TimeStamp
-  StaticSitesArtifactStoreBucketName:
-    Value: !Ref StaticSitesArtifactStoreBucket
-  CodeBuildServiceRoleName:
-    Value: !Ref StaticSitesCodeBuildServiceRole
-  CodeBuildServiceRoleArn:
-    Value: !GetAtt StaticSitesCodeBuildServiceRole.Arn
+#  StaticSitesArtifactStoreBucketName:
+#    Value: !Ref StaticSitesArtifactStoreBucket
+#  CodeBuildServiceRoleName:
+#    Value: !Ref StaticSitesCodeBuildServiceRole
+#  CodeBuildServiceRoleArn:
+#    Value: !GetAtt StaticSitesCodeBuildServiceRole.Arn
