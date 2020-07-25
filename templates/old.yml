@@ -1,0 +1,472 @@
+#  Stage:
+#    Type: String
+#    AllowedValues:
+#      - dev
+#      - prod
+#    Default: dev
+#    Description: Stage
+#  ServiceName:
+#    Type: String
+#    Default: 'static-sites-cdn'
+
+#  AppName:
+#    Description: 'app name'
+#    Type: String
+#    Default: 'portfolio'
+
+#  StaticSitesBucketName:
+#    Value: !Ref StaticSitesBucket
+#  StaticsSitesBucketUrl:
+#    Value: !GetAtt StaticSitesBucket.WebsiteURL
+#  DistributionDomain:
+#    Description: 'Cloudfront Domain'
+#    Value: !GetAtt StaticSitesCdn.DomainName
+#  LambdaRoleArn:
+#    Value: !GetAtt IamRoleLambdaExecution.Arn
+#  OriginRouterLambdaFunctionName:
+#    Value: !Ref OriginRouterLambdaFunction
+#  OriginRouterLambdaFunctionQualifiedArn:
+#    Description: Current Lambda function version
+#    Value: !Ref OriginRouterLambdaVersion
+#  CustomHeadersLambdaFunctionName:
+#    Value: !Ref CustomHeadersLambdaFunction
+#  CustomHeadersLambdaFunctionQualifiedArn:
+#    Description: Current Lambda function version
+#    Value: !Ref CustomHeadersLambdaVersion
+#Resources:
+#  CodePipelineArtifactStoreBucketPolicy:
+#    Type: 'AWS::S3::BucketPolicy'
+#    Properties:
+#      Bucket: !Ref CodePipelineArtifactStoreBucket
+#      PolicyDocument:
+#        Version: 2012-10-17
+#        Statement:
+#          - Sid: DenyUnEncryptedObjectUploads
+#            Effect: Deny
+#            Principal: '*'
+#            Action: 's3:PutObject'
+#            Resource: !Join
+#              - ''
+#              - - !GetAtt
+#                  - CodePipelineArtifactStoreBucket
+#                  - Arn
+#                - /*
+#            Condition:
+#              StringNotEquals:
+#                's3:x-amz-server-side-encryption': 'aws:kms'
+#          - Sid: DenyInsecureConnections
+#            Effect: Deny
+#            Principal: '*'
+#            Action: 's3:*'
+#            Resource: !Join
+#              - ''
+#              - - !GetAtt
+#                  - CodePipelineArtifactStoreBucket
+#                  - Arn
+#                - /*
+#            Condition:
+#              Bool:
+#                'aws:SecureTransport': false
+#
+#  AppPipeline:
+#    Type: 'AWS::CodePipeline::Pipeline'
+#    Properties:
+#      Name: github-events-pipeline
+#      RoleArn: !GetAtt
+#        - CodePipelineServiceRole
+#        - Arn
+#      Stages:
+#        - Name: Source
+#          Actions:
+#            - Name: SourceAction
+#              ActionTypeId:
+#                Category: Source
+#                Owner: ThirdParty
+#                Version: 1
+#                Provider: GitHub
+#              OutputArtifacts:
+#                - Name: SourceOutput
+#              Configuration:
+#                Owner: !Ref GitHubOwner
+#                Repo: !Ref RepositoryName
+#                Branch: !Ref BranchName
+#                OAuthToken: '{{resolve:secretsmanager:MyGitHubSecret:SecretString:token}}'
+#                PollForSourceChanges: false
+#              RunOrder: 1
+#        - Name: Beta
+#          Actions:
+#            - Name: BetaAction
+#              InputArtifacts:
+#                - Name: SourceOutput
+#              ActionTypeId:
+#                Category: Deploy
+#                Owner: AWS
+#                Version: 1
+#                Provider: CodeDeploy
+#              Configuration:
+#                ApplicationName: !Ref ApplicationName
+#                DeploymentGroupName: !Ref BetaFleet
+#              RunOrder: 1
+#      ArtifactStore:
+#        Type: S3
+#        Location: !Ref CodePipelineArtifactStoreBucket
+#  CodePipelineServiceRole:
+#    Type: 'AWS::IAM::Role'
+#    Properties:
+#      AssumeRolePolicyDocument:
+#        Version: 2012-10-17
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service:
+#                - codepipeline.amazonaws.com
+#            Action: 'sts:AssumeRole'
+#      Path: /
+#      Policies:
+#        - PolicyName: AWS-CodePipeline-Service-3
+#          PolicyDocument:
+#            Version: 2012-10-17
+#            Statement:
+#              - Effect: Allow
+#                Action:
+#                  - 'codecommit:CancelUploadArchive'
+#                  - 'codecommit:GetBranch'
+#                  - 'codecommit:GetCommit'
+#                  - 'codecommit:GetUploadArchiveStatus'
+#                  - 'codecommit:UploadArchive'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'codedeploy:CreateDeployment'
+#                  - 'codedeploy:GetApplicationRevision'
+#                  - 'codedeploy:GetDeployment'
+#                  - 'codedeploy:GetDeploymentConfig'
+#                  - 'codedeploy:RegisterApplicationRevision'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'codebuild:BatchGetBuilds'
+#                  - 'codebuild:StartBuild'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'devicefarm:ListProjects'
+#                  - 'devicefarm:ListDevicePools'
+#                  - 'devicefarm:GetRun'
+#                  - 'devicefarm:GetUpload'
+#                  - 'devicefarm:CreateUpload'
+#                  - 'devicefarm:ScheduleRun'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'lambda:InvokeFunction'
+#                  - 'lambda:ListFunctions'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'iam:PassRole'
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - 'elasticbeanstalk:*'
+#                  - 'ec2:*'
+#                  - 'elasticloadbalancing:*'
+#                  - 'autoscaling:*'
+#                  - 'cloudwatch:*'
+#                  - 's3:*'
+#                  - 'sns:*'
+#                  - 'cloudformation:*'
+#                  - 'rds:*'
+#                  - 'sqs:*'
+#                  - 'ecs:*'
+#                Resource: '*'
+#
+#
+#                  - Name: Beta
+#                      Actions:
+#                          - Name: BetaAction
+#                            InputArtifacts:
+#                              - Name: SourceOutput
+#                            ActionTypeId:
+#                              Category: Deploy
+#                              Owner: AWS
+#                              Version: 1
+#                              Provider: CodeDeploy
+#                            Configuration:
+#                              ApplicationName: !Ref ApplicationName
+#                              DeploymentGroupName: !Ref BetaFleet
+#                            RunOrder: 1
+#                      ArtifactStore:
+#                        Type: S3
+#                        Location: !Ref CodePipelineArtifactStoreBucket
+
+  PortfolioPipelineWebhook:
+    Type: 'AWS::CodePipeline::Webhook'
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: '{{resolve:secretsmanager:GitHubAccessToken:access-token}}'
+      Filters:
+        - JsonPath: $.ref
+          MatchEquals: 'refs/heads/{Branch}'
+      TargetPipeline: !Ref PortfolioPipeline
+      TargetAction: SourceAction
+      Name: PortfolioPipelineWebhook
+      TargetPipelineVersion: !GetAtt
+        - PortfolioPipeline
+        - Version
+      RegisterWithThirdParty: true
+
+  PortfolioPipeline:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: portfolio
+      RoleArn: !GetAtt
+        - CodePipelineServiceRole
+        - Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                Owner: !Ref GitHubOwner
+                Repo: 'portfolio'
+                Branch: !Ref BranchName
+                OAuthToken: '{{resolve:secretsmanager:GitHubAccessToken:access-token}}'
+                PollForSourceChanges: false
+              RunOrder: 1
+
+  CodePipelineServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: Static-Sites-CodePipeline-Service
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'codecommit:CancelUploadArchive'
+                  - 'codecommit:GetBranch'
+                  - 'codecommit:GetCommit'
+                  - 'codecommit:GetUploadArchiveStatus'
+                  - 'codecommit:UploadArchive'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codedeploy:CreateDeployment'
+                  - 'codedeploy:GetApplicationRevision'
+                  - 'codedeploy:GetDeployment'
+                  - 'codedeploy:GetDeploymentConfig'
+                  - 'codedeploy:RegisterApplicationRevision'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'devicefarm:ListProjects'
+                  - 'devicefarm:ListDevicePools'
+                  - 'devicefarm:GetRun'
+                  - 'devicefarm:GetUpload'
+                  - 'devicefarm:CreateUpload'
+                  - 'devicefarm:ScheduleRun'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:ListFunctions'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'iam:PassRole'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'elasticbeanstalk:*'
+                  - 'ec2:*'
+                  - 'elasticloadbalancing:*'
+                  - 'autoscaling:*'
+                  - 'cloudwatch:*'
+                  - 's3:*'
+                  - 'sns:*'
+                  - 'cloudformation:*'
+                  - 'rds:*'
+                  - 'sqs:*'
+                  - 'ecs:*'
+                Resource: '*'
+
+Outputs:
+  LatestTimeStamp:
+    Value: !Ref TimeStamp
+  StaticSitesArtifactStoreBucketName:
+    Value: !Ref StaticSitesArtifactStoreBucket
+  PortfolioPipelineWebhookName:
+    Value: !Ref PortfolioPipelineWebhook
+  PortfolioPipelineName:
+    Value: !Ref PortfolioPipeline
+
+
+    PortfolioPipelineWebhook:
+      Type: 'AWS::CodePipeline::Webhook'
+      Properties:
+        Authentication: GITHUB_HMAC
+        AuthenticationConfiguration:
+          SecretToken: '{{resolve:secretsmanager:GitHubAccessToken:SecretString:access-token}}'
+        Filters:
+          JsonPath: $.ref
+          MatchEquals: 'refs/heads/{Branch}'
+        TargetPipeline: !Ref PortfolioPipeline
+        TargetAction: SourceAction
+        Name: PortfolioPipelineWebhook
+        TargetPipelineVersion: !GetAtt PortfolioPipeline.Version
+        RegisterWithThirdParty: true
+
+      PortfolioPipeline:
+        Type: 'AWS::CodePipeline::Pipeline'
+        Properties:
+          Name: portfolio
+          RoleArn: !GetAtt CodePipelineServiceRole.Arn
+          ArtifactStore:
+            Location: !Ref StaticSitesArtifactStoreBucket
+            Type: S3
+          Stages:
+            - Name: Source
+              Actions:
+                - Name: SourceAction
+                  ActionTypeId:
+                    Category: Source
+                    Owner: ThirdParty
+                    Version: 1
+                    Provider: GitHub
+                  OutputArtifacts:
+                    - Name: SourceOutput
+                  Configuration:
+                    Owner: !Ref GitHubOwner
+                    Repo: portfolio
+                    Branch: !Ref BranchName
+                    OAuthToken: '{{resolve:secretsmanager:GitHubAccessToken:SecretString:access-token}}'
+                    PollForSourceChanges: false
+                  RunOrder: 1
+            - Name: Build
+              Actions:
+                - Name: CodeBuild
+                  ActionTypeId:
+                    Category: Build
+                    Owner: AWS
+                    Provider: CodeBuild
+                    Version: 1
+                  InputArtifacts:
+                    - Name: SourceOutput
+                  OutputArtifacts:
+                    - Name: PublicFiles
+                  Configuration:
+                    ProjectName: !Ref CodeBuildProject
+
+
+
+Type: AWS::CodeBuild::Project
+  Properties:
+    Artifacts:
+      ArtifactIdentifier: String
+      EncryptionDisabled: Boolean
+      Location: String
+      Name: String
+      NamespaceType: String
+      OverrideArtifactName: Boolean
+      Packaging: String
+      Path: String
+      Type: String
+    BadgeEnabled: Boolean
+    Cache:
+      Location: String
+      Modes:
+        - String
+      Type: String
+    Description: String
+    EncryptionKey: String
+    Environment:
+      Certificate: String
+        ComputeType: String
+        EnvironmentVariables:
+          - Name: String
+            Type: String
+            Value: String
+        Image: String
+        ImagePullCredentialsType: String
+        PrivilegedMode: Boolean
+        RegistryCredential:
+          Credential: String
+          CredentialProvider: String
+        Type: String
+    FileSystemLocations:
+      - Identifier: String
+        Location: String
+        MountOptions: String
+        MountPoint: String
+        Type: String
+    LogsConfig:
+      CloudWatchLogs:
+        GroupName: String
+        Status: String
+        StreamName: String
+      S3Logs:
+        EncryptionDisabled: Boolean
+        Location: String
+        Status: String
+    SecondaryArtifacts:
+      - ArtifactIdentifier: String
+        EncryptionDisabled: Boolean
+        Location: String
+        Name: String
+        NamespaceType: String
+        OverrideArtifactName: Boolean
+        Packaging: String
+        Path: String
+        Type: String
+    SecondarySources:
+      - Source
+    SecondarySourceVersions:
+      - SourceIdentifier: String
+        SourceVersion: String
+    ServiceRole: String
+    Source:
+      Auth:
+        SourceAuth
+      BuildSpec: buildspec.yml
+      BuildStatusConfig:
+        BuildStatusConfig
+      GitCloneDepth: Integer
+      GitSubmodulesConfig:
+        GitSubmodulesConfig
+      InsecureSsl: Boolean
+      Location: String
+      ReportBuildStatus: Boolean
+      SourceIdentifier: String
+      Type: String
+    SourceVersion: String
+    Tags:
+      - Tag
+    TimeoutInMinutes: Integer
+    Triggers:
+      ProjectTriggers
+    VpcConfig:
+      VpcConfig

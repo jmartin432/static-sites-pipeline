@@ -1,0 +1,350 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: The AWS CloudFormation template for Static Sites deployment pipelines
+
+Parameters:
+  Region:
+    Type: String
+    Default: us-east-1
+  TimeStamp:
+    Type: String
+  AccountId:
+    Type: String
+    Default: '{{resolve:ssm:Account-ID:1}}'
+  BranchName:
+    Description: github branch name
+    Type: String
+    Default: master
+  RepositoryName:
+    Description: github repository name
+    Type: String
+    Default: portfolio
+  GitHubOwner:
+    Type: String
+    Default: jmartin432
+  Email:
+    Type: String
+    Default: info@justinlmartin.com
+  ArtifactBucketName:
+    Type: String
+    Default: '{{resolve:ssm:static-sites-pipeline-artifacts-bucket:1}}'
+  DeploymentBucketName:
+    Type: String
+    Default: '{{resolve:ssm:static-sites-pipeline-deployment-bucket:1}}'
+  LambdasBucketName:
+    Type: String
+    Default: '{{resolve:ssm:static-sites-pipeline-lambdas-bucket:1}}'
+
+Resources:
+
+# Buckets
+
+  StaticSitesArtifactStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref ArtifactBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  StaticSitesDeploymentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref DeploymentBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  StaticSitesLambdasBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref LambdasBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+# Log Groups
+
+  StaticSitesPipelineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: static-sites-pipeline-log-group
+      RetentionInDays: 14
+
+  PortfolioCodeBuildLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref StaticSitesPipelineLogGroup
+      LogStreamName: static-sites-portfolio-codebuild-log-stream
+
+#  CodeBuildSNSTopic:
+#    Type: AWS::SNS::Topic
+#    Properties:
+#      DisplayName: Static Sites CodeBuild Topic
+#      Subscription:
+#        - Endpoint: !Ref Email
+#          Protocol: email
+#      TopicName: static-sites-codebuild-topic
+#
+#  CodeBuildSNSEmailSubsciription:
+#    Type: AWS::SNS::Subscription
+#    Properties:
+#      Endpoint: !Ref Email
+#      Protocol: email
+#      Region: !Ref Region
+#      TopicArn: !Ref CodeBuildSNSTopic
+
+#  CodeBuildSNSPolicy:
+#    Type: AWS::SNS::TopicPolicy
+#    Properties:
+#      PolicyDocument:
+#        Id: StaticSitesCodeBuildSNSPolicy
+#        Version: '2012-10-17'
+#        Statement:
+#          - Sid: My-statement-id
+#            Effect: Allow
+#            Principal:
+#              AWS: !GetAtt myuser.Arn
+#            Action: sns:Publish
+#            Resource: "*"
+#      Topics:
+#        - !Ref CodeBuildSNSTopic
+
+# Rules
+
+  StaticSitesCodeBuildRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Static Sites CodeBuild Rule for Triggering Lambda
+      EventPattern:
+        source:
+          - aws.codebuild
+        detail-type:
+          - CodeBuild Build State Change
+        detail:
+          build-status:
+            - SUCCEEDED
+      Name: static-sites-pipleline-codebuild-rule
+      RoleArn: !GetAtt StaticSitesCodebuildRuleRole.Arn
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt StaticSitesPipelineDeployLambda.Arn
+          Id: deploy_lambda
+    DependsOn:
+      - StaticSitesPipelineDeployLambda
+
+# CodeBuild
+
+  PortfolioCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: portfolio-codebuild
+      ServiceRole: !GetAtt StaticSitesCodeBuildServiceRole.Arn
+      BadgeEnabled: false
+      Description: Portfolio CodeBuild
+      Source:
+        Auth:
+          Type: OAUTH
+        BuildSpec: buildspec.yml
+        GitCloneDepth: 0
+        GitSubmodulesConfig:
+          FetchSubmodules: false
+        InsecureSsl: false
+        Location: https://github.com/jmartin432/portfolio.git
+        ReportBuildStatus: false
+        SourceIdentifier: portfolio_source
+        Type: GITHUB
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        ImagePullCredentialsType: CODEBUILD
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+      QueuedTimeoutInMinutes: 5
+      Artifacts:
+        ArtifactIdentifier: portfolio_artifacts
+        EncryptionDisabled: false
+        Location: !Ref ArtifactBucketName
+        Name: portfolio.zip
+        NamespaceType: NONE
+        Path: portfolio-artifacts
+        Packaging: ZIP
+        Type: S3
+      Triggers:
+        Webhook: true
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref StaticSitesPipelineLogGroup
+          StreamName: !Ref PortfolioCodeBuildLogStream
+          Status: ENABLED
+      TimeoutInMinutes: 5
+
+# Lambdas
+
+  StaticSitesPipelineDeployLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref LambdasBucketName
+        S3Key: !Sub ${TimeStamp}/lambdas.zip
+      FunctionName: !Sub static-sites-pipeline-deploy-lambda-${TimeStamp}
+      Environment:
+        Variables:
+          ArtifactBucket: !Ref ArtifactBucketName
+          DeployBucket: !Ref DeploymentBucketName
+      Handler: deploy-lambda.handler
+      MemorySize: 128
+      Role: !GetAtt StaticSitesPipelineLambdaRole.Arn
+      Runtime: python3.8
+      Timeout: 5
+      Description: Deploys Artifacts to S3 Deploy Bucket
+    DependsOn:
+      - StaticSitesPipelineLambdaRole
+
+  CodeBuildEventLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref StaticSitesPipelineDeployLambda
+      Principal: 'events.amazonaws.com'
+      SourceArn: !GetAtt StaticSitesCodeBuildRule.Arn
+    DependsOn:
+      - StaticSitesPipelineDeployLambda
+
+
+# Roles
+
+  StaticSitesCodeBuildServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: static-sites-pipeline-codebuild-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: static-sites-pipeline-codebuild-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  -  'logs:CreateLogStream'
+                  -  'logs:PutLogEvents'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'devicefarm:ListProjects'
+                  - 'devicefarm:ListDevicePools'
+                  - 'devicefarm:GetRun'
+                  - 'devicefarm:GetUpload'
+                  - 'devicefarm:CreateUpload'
+                  - 'devicefarm:ScheduleRun'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:ListFunctions'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'iam:PassRole'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'ec2:*'
+                  - 'elasticloadbalancing:*'
+                  - 'autoscaling:*'
+                  - 'cloudwatch:*'
+                  - 's3:*'
+                  - 'sns:*'
+                  - 'cloudformation:*'
+                  - 'rds:*'
+                  - 'sqs:*'
+                  - 'ecs:*'
+                Resource: '*'
+
+  StaticSitesPipelineLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: static-sites-pipeline-deploy-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: static-sites-pipeline-deploy-lambda-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowLogging
+                Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                  - 'logs:CreateLogGroup'
+                  - 'logs:DescribeLogStreams'
+                Resource:
+                  - '*'
+              - Sid: AllowS3Access
+                Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub arn:aws:s3:::${DeploymentBucketName}/*
+                  - !Sub arn:aws:s3:::${ArtifactBucketName}/*
+      Path: "/"
+
+  StaticSitesCodebuildRuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: static-sites-pipeline-codebuild-rule-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: static-sites-pipeline-codebuild-rule-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowLambdaInvoke
+                Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource:
+                  - '*'
+      Path: "/"
+
+
+Outputs:
+  LatestTimeStamp:
+    Value: !Ref TimeStamp
+  StaticSitesArtifactStoreBucketName:
+    Value: !Ref StaticSitesArtifactStoreBucket
+  CodeBuildServiceRoleName:
+    Value: !Ref StaticSitesCodeBuildServiceRole
+  CodeBuildServiceRoleArn:
+    Value: !GetAtt StaticSitesCodeBuildServiceRole.Arn

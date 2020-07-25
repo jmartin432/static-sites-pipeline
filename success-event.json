@@ -1,0 +1,165 @@
+{
+  "version": "0",
+  "id": "69668007-e98e-fe60-c2a6-bf5f1f0e2235",
+  "detail-type": "CodeBuild Build State Change",
+  "source": "aws.codebuild",
+  "account": "406135181037",
+  "time": "2020-07-25T02:43:07Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:codebuild:us-east-1:406135181037:build/portfolio-codebuild:1a210fe4-f442-4b34-b5a9-b0aac426893b"
+  ],
+  "detail": {
+    "build-status": "SUCCEEDED",
+    "project-name": "portfolio-codebuild",
+    "build-id": "arn:aws:codebuild:us-east-1:406135181037:build/portfolio-codebuild:1a210fe4-f442-4b34-b5a9-b0aac426893b",
+    "additional-information": {
+      "cache": {
+        "type": "NO_CACHE"
+      },
+      "build-number": 4.0,
+      "timeout-in-minutes": 5.0,
+      "build-complete": True,
+      "initiator": "GitHub-Hookshot/33dc1dc",
+      "build-start-time": "Jul 25, 2020 2:42:31 AM",
+      "source": {
+        "report-build-status": False,
+        "buildspec": "buildspec.yml",
+        "auth": {
+          "type": "OAUTH"
+        },
+        "location": "https://github.com/jmartin432/portfolio.git",
+        "git-clone-depth": 0.0,
+        "type": "GITHUB",
+        "git-submodules-config": {
+          "fetch-submodules": False
+        }
+      },
+      "source-version": "99a36289062e2fada86bdedb1abe95865ddc251c",
+      "artifact": {
+        "md5sum": "af6d296466a95df3f044b984aedc6cc2",
+        "sha256sum": "738762d68c5fbd65175c4429ec0458e55a568c9c8e452ce77e44448b980b12fd",
+        "location": "arn:aws:s3:::static-sites-pipeline-artifacts-9nw36hnr/portfolio-artifacts/portfolio.zip"
+      },
+      "environment": {
+        "image": "aws/codebuild/standard:4.0",
+        "privileged-mode": True,
+        "image-pull-credentials-type": "CODEBUILD",
+        "compute-type": "BUILD_GENERAL1_SMALL",
+        "type": "LINUX_CONTAINER",
+        "environment-variables": []
+      },
+      "logs": {
+        "group-name": "static-sites-pipeline-log-group",
+        "stream-name": "static-sites-portfolio-codebuild-log-stream/1a210fe4-f442-4b34-b5a9-b0aac426893b",
+        "deep-link": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logEvent:group=static-sites-pipeline-log-group;stream=static-sites-portfolio-codebuild-log-stream/1a210fe4-f442-4b34-b5a9-b0aac426893b"
+      },
+      "phases": [
+        {
+          "phase-context": [],
+          "start-time": "Jul 25, 2020 2:42:31 AM",
+          "end-time": "Jul 25, 2020 2:42:31 AM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "SUBMITTED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [],
+          "start-time": "Jul 25, 2020 2:42:31 AM",
+          "end-time": "Jul 25, 2020 2:42:33 AM",
+          "duration-in-seconds": 1.0,
+          "phase-type": "QUEUED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:42:33 AM",
+          "end-time": "Jul 25, 2020 2:42:59 AM",
+          "duration-in-seconds": 26.0,
+          "phase-type": "PROVISIONING",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:42:59 AM",
+          "end-time": "Jul 25, 2020 2:43:01 AM",
+          "duration-in-seconds": 2.0,
+          "phase-type": "DOWNLOAD_SOURCE",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:43:01 AM",
+          "end-time": "Jul 25, 2020 2:43:01 AM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "INSTALL",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:43:01 AM",
+          "end-time": "Jul 25, 2020 2:43:01 AM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "PRE_BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:43:01 AM",
+          "end-time": "Jul 25, 2020 2:43:01 AM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:43:01 AM",
+          "end-time": "Jul 25, 2020 2:43:01 AM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "POST_BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:43:01 AM",
+          "end-time": "Jul 25, 2020 2:43:02 AM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "UPLOAD_ARTIFACTS",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 2:43:02 AM",
+          "end-time": "Jul 25, 2020 2:43:06 AM",
+          "duration-in-seconds": 4.0,
+          "phase-type": "FINALIZING",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "start-time": "Jul 25, 2020 2:43:06 AM",
+          "phase-type": "COMPLETED"
+        }
+      ],
+      "queued-timeout-in-minutes": 5.0
+    },
+    "current-phase": "COMPLETED",
+    "current-phase-context": "[: ]",
+    "version": "1"
+  }
+}
