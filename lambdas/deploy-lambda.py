@@ -20,7 +20,6 @@ def publish_sns(topic, project, status, message, event_id):
     }
 
     response = topic.publish(
-        # TargetArn=os.environ['SlackRouterLambdaArn'],
         Message=json.dumps(sns_message),
         Subject='Deploy Status Update',
     )
@@ -38,9 +37,13 @@ def handler(event, context):
     deployment_bucket = s3.Bucket(os.environ['DeployBucket'])
     event_id = event['id']
     project = event['detail']['project-name']
+    app_name = project.replace('-codebuild', '')
+
+    message = Template('Starting Deploy Lambda for $app. Event ID: $event_id') \
+        .safe_substitute(app=app_name, event_id=event_id)
+    publish_sns(status_topic, app_name, 'IN_PROGRESS', message, event_id)
     logger.info(Template('received event from CodeBuild, project: $project, id: $event_id')
                 .safe_substitute(project=project, event_id=event_id))
-    app_name = project.replace('-codebuild', '')
     artifact_path = project.replace('-codebuild', '-artifacts')
     artifact_name = project.replace('-codebuild', '.zip')
     artifact_key = artifact_path + '/' + artifact_name

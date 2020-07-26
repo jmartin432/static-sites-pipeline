@@ -96,7 +96,7 @@ Resources:
       DisplayName: Deploy Lambda Status Topic
       TopicName: static-sites-deploy-lambda-sns-topic
 
-  SlackRouterDeployStatusSubsciription:
+  SlackRouterDeployStatusSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: !GetAtt SlackRouterLambda.Arn
@@ -211,7 +211,7 @@ Resources:
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.8
-      Timeout: 60
+      Timeout: 30
       Description: Deploys Artifacts to S3 Deploy Bucket
     DependsOn:
       - LambdaRole
@@ -241,7 +241,7 @@ Resources:
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.8
-      Timeout: 30
+      Timeout: 5
       Description: Sends Pipeline Slack Notifications
     DependsOn:
       - LambdaRole
@@ -265,7 +265,6 @@ Resources:
       SourceArn: !Ref DeployStatusTopic
     DependsOn:
       - SlackRouterLambda
-
 
 # Roles
 
