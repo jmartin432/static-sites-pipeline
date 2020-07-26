@@ -1,0 +1,58 @@
+{
+  "version": "0",
+  "id": "e9228681-a647-ee04-7490-d3ba051ba57e",
+  "detail-type": "CodeBuild Build State Change",
+  "source": "aws.codebuild",
+  "account": "406135181037",
+  "time": "2020-07-25T21:33:48Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:codebuild:us-east-1:406135181037:build/portfolio-codebuild:5df93bf3-0af0-4f47-857a-df9e725fa0a0"
+  ],
+  "detail": {
+    "build-status": "IN_PROGRESS",
+    "project-name": "portfolio-codebuild",
+    "build-id": "arn:aws:codebuild:us-east-1:406135181037:build/portfolio-codebuild:5df93bf3-0af0-4f47-857a-df9e725fa0a0",
+    "additional-information": {
+      "cache": {
+        "type": "NO_CACHE"
+      },
+      "timeout-in-minutes": 5.0,
+      "build-complete": False,
+      "initiator": "GitHub-Hookshot/33dc1dc",
+      "build-start-time": "Jul 25, 2020 9:33:48 PM",
+      "source": {
+        "report-build-status": False,
+        "buildspec": "buildspec.yml",
+        "auth": {
+          "type": "OAUTH"
+        },
+        "location": "https://github.com/jmartin432/portfolio.git",
+        "git-clone-depth": 0.0,
+        "type": "GITHUB",
+        "git-submodules-config": {
+          "fetch-submodules": False
+        }
+      },
+      "source-version": "5f45891194cb1039d28b3a2c5d68b53441d51852",
+      "artifact": {
+        "location": "arn:aws:s3:::static-sites-pipeline-artifacts-9nw36hnr/portfolio-artifacts/portfolio.zip"
+      },
+      "environment": {
+        "image": "aws/codebuild/standard:4.0",
+        "privileged-mode": True,
+        "image-pull-credentials-type": "CODEBUILD",
+        "compute-type": "BUILD_GENERAL1_SMALL",
+        "type": "LINUX_CONTAINER",
+        "environment-variables": []
+      },
+      "logs": {
+        "deep-link": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logEvent:group=null;stream=null"
+      },
+      "queued-timeout-in-minutes": 5.0
+    },
+    "current-phase": "SUBMITTED",
+    "current-phase-context": "[]",
+    "version": "1"
+  }
+}

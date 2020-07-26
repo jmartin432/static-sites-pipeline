@@ -1,0 +1,23 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:406135181037:static-sites-deploy-lambda-sns-topic:946e36e6-59e3-43f2-85eb-71fbdbb7bb8e",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "ef0ebc4b-5250-52a5-a7ee-ebdd8d54de02",
+        "TopicArn": "arn:aws:sns:us-east-1:406135181037:static-sites-deploy-lambda-sns-topic",
+        "Subject": "Deploy Status Update",
+        "Message": "{\"project\": \"portfolio\", \"status\": \"SUCCEEDED\", \"message\": \"uploading portfolio complete. Event ID: event_id\", \"event_id\": \"627a185b-cba6-2b83-611d-d1c82cf0ff29\"}",
+        "Timestamp": "2020-07-26T01:30:44.615Z",
+        "SignatureVersion": "1",
+        "Signature": "AlSXx3nZNjz02L4sCFVQycIgO0AUZl8UaIQLPgyqxMQp8qQCeLr8pleaXBa8CE88/qIbZd5fwR9hG5MNkHaDyR9LMLOgwj3OoGWOBjAB4LfX1OTmEpGt+WvD2PZ1H6D5nlFyGSwQs2NmwvRLBliF4Swe0HjbTjh4obEh7V7OkM0dCJwiIr/W8Byi0+alhcbUduedgVsEthxAwvgcBlwfDuleBHNgyR7QV9mWkpJFdBzdPl6/REc1gWvdqZhD4Isp2yP97cX/cuLEzWwi7oWOruFW+WNjRm1bhJ5zm4ixtXT3n+QJQQucBITZJ5Zxz8cgkjcl48u3ztI5ZsaoNHAwLw==",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-a86cb10b4e1f29c941702d737128f7b6.pem",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:406135181037:static-sites-deploy-lambda-sns-topic:946e36e6-59e3-43f2-85eb-71fbdbb7bb8e",
+        "MessageAttributes": {
+        }
+      }
+    }
+  ]
+}

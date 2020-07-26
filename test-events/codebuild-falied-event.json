@@ -1,0 +1,163 @@
+{
+  "version": "0",
+  "id": "97cdf568-7460-0a3b-5c09-2468abc28f09",
+  "detail-type": "CodeBuild Build State Change",
+  "source": "aws.codebuild",
+  "account": "406135181037",
+  "time": "2020-07-25T22:28:19Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:codebuild:us-east-1:406135181037:build/portfolio-codebuild:e3ed35a2-0470-43d2-a2c2-d066e3710d78"
+  ],
+  "detail": {
+    "build-status": "FAILED",
+    "project-name": "portfolio-codebuild",
+    "build-id": "arn:aws:codebuild:us-east-1:406135181037:build/portfolio-codebuild:e3ed35a2-0470-43d2-a2c2-d066e3710d78",
+    "additional-information": {
+      "cache": {
+        "type": "NO_CACHE"
+      },
+      "build-number": 4.0,
+      "timeout-in-minutes": 5.0,
+      "build-complete": True,
+      "initiator": "GitHub-Hookshot/33dc1dc",
+      "build-start-time": "Jul 25, 2020 10:27:43 PM",
+      "source": {
+        "report-build-status": False,
+        "buildspec": "buildspec.yml",
+        "auth": {
+          "type": "OAUTH"
+        },
+        "location": "https://github.com/jmartin432/portfolio.git",
+        "git-clone-depth": 0.0,
+        "type": "GITHUB",
+        "git-submodules-config": {
+          "fetch-submodules": False
+        }
+      },
+      "source-version": "90ffcc8aec2027271fd840883a28652884611e4f",
+      "artifact": {
+        "location": "arn:aws:s3:::static-sites-pipeline-artifacts-9nw36hnr/portfolio-artifacts/portfolio.zip"
+      },
+      "environment": {
+        "image": "aws/codebuild/standard:4.0",
+        "privileged-mode": True,
+        "image-pull-credentials-type": "CODEBUILD",
+        "compute-type": "BUILD_GENERAL1_SMALL",
+        "type": "LINUX_CONTAINER",
+        "environment-variables": []
+      },
+      "logs": {
+        "group-name": "static-sites-pipeline-log-group",
+        "stream-name": "static-sites-portfolio-codebuild-log-stream/e3ed35a2-0470-43d2-a2c2-d066e3710d78",
+        "deep-link": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logEvent:group=static-sites-pipeline-log-group;stream=static-sites-portfolio-codebuild-log-stream/e3ed35a2-0470-43d2-a2c2-d066e3710d78"
+      },
+      "phases": [
+        {
+          "phase-context": [],
+          "start-time": "Jul 25, 2020 10:27:43 PM",
+          "end-time": "Jul 25, 2020 10:27:43 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "SUBMITTED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [],
+          "start-time": "Jul 25, 2020 10:27:43 PM",
+          "end-time": "Jul 25, 2020 10:27:44 PM",
+          "duration-in-seconds": 1.0,
+          "phase-type": "QUEUED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 10:27:44 PM",
+          "end-time": "Jul 25, 2020 10:28:11 PM",
+          "duration-in-seconds": 26.0,
+          "phase-type": "PROVISIONING",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 10:28:11 PM",
+          "end-time": "Jul 25, 2020 10:28:13 PM",
+          "duration-in-seconds": 1.0,
+          "phase-type": "DOWNLOAD_SOURCE",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 10:28:13 PM",
+          "end-time": "Jul 25, 2020 10:28:13 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "INSTALL",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 10:28:13 PM",
+          "end-time": "Jul 25, 2020 10:28:13 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "PRE_BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 10:28:13 PM",
+          "end-time": "Jul 25, 2020 10:28:13 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 10:28:13 PM",
+          "end-time": "Jul 25, 2020 10:28:13 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "POST_BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            "CLIENT_ERROR: \nError in UPLOAD_ARTIFACTS phase: AccessDenied: Access Denied\n\tstatus code: 403, request id: F0B7E9C7AC87B03B, host id: rbGEEELWamSCULqSo7eC3Dq3BlnowO8nkmt60v5JcUpyxeltp88v4uQSfJpCRctoTD6FGzZxaiY="
+          ],
+          "start-time": "Jul 25, 2020 10:28:13 PM",
+          "end-time": "Jul 25, 2020 10:28:13 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "UPLOAD_ARTIFACTS",
+          "phase-status": "FAILED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Jul 25, 2020 10:28:13 PM",
+          "end-time": "Jul 25, 2020 10:28:17 PM",
+          "duration-in-seconds": 4.0,
+          "phase-type": "FINALIZING",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "start-time": "Jul 25, 2020 10:28:17 PM",
+          "phase-type": "COMPLETED"
+        }
+      ],
+      "queued-timeout-in-minutes": 5.0
+    },
+    "current-phase": "COMPLETED",
+    "current-phase-context": "[: ]",
+    "version": "1"
+  }
+}

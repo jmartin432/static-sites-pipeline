@@ -1,0 +1,14 @@
+{
+  "MessageId": "ef0ebc4b-5250-52a5-a7ee-ebdd8d54de02",
+  "ResponseMetadata": {
+    "RequestId": "2a2fb1f3-69af-53a6-9a7a-e665b6abcf01",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "x-amzn-requestid": "2a2fb1f3-69af-53a6-9a7a-e665b6abcf01",
+      "content-type": "text/xml",
+      "content-length": "294",
+      "date": "Sun, 26 Jul 2020 01:30:44 GMT"
+    },
+    "RetryAttempts": 0
+  }
+}

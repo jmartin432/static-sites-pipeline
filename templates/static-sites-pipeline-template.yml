@@ -35,7 +35,7 @@ Parameters:
     Default: '{{resolve:ssm:static-sites-pipeline-lambdas-bucket:1}}'
   SlackWebHookPath:
     Type: String
-    Default: '{{resolve:secretsmanager:slack-webhook-paths:SecretString:static-sites-pipeline:1}}'
+    Default: '{{resolve:secretsmanager:slack-webhook-paths:SecretString:static-sites-pipeline}}'
 
 Resources:
 
@@ -88,38 +88,23 @@ Resources:
       LogGroupName: !Ref PipelineLogGroup
       LogStreamName: static-sites-portfolio-codebuild-log-stream
 
-#  CodeBuildSNSTopic:
-#    Type: AWS::SNS::Topic
-#    Properties:
-#      DisplayName: Static Sites CodeBuild Topic
-#      Subscription:
-#        - Endpoint: !Ref Email
-#          Protocol: email
-#      TopicName: static-sites-codebuild-topic
-#
-#  CodeBuildSNSEmailSubsciription:
-#    Type: AWS::SNS::Subscription
-#    Properties:
-#      Endpoint: !Ref Email
-#      Protocol: email
-#      Region: !Ref Region
-#      TopicArn: !Ref CodeBuildSNSTopic
+# SNS
 
-#  CodeBuildSNSPolicy:
-#    Type: AWS::SNS::TopicPolicy
-#    Properties:
-#      PolicyDocument:
-#        Id: StaticSitesCodeBuildSNSPolicy
-#        Version: '2012-10-17'
-#        Statement:
-#          - Sid: My-statement-id
-#            Effect: Allow
-#            Principal:
-#              AWS: !GetAtt myuser.Arn
-#            Action: sns:Publish
-#            Resource: "*"
-#      Topics:
-#        - !Ref CodeBuildSNSTopic
+  DeployStatusTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Deploy Lambda Status Topic
+      TopicName: static-sites-deploy-lambda-sns-topic
+
+  SlackRouterDeployStatusSubsciription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt SlackRouterLambda.Arn
+      Protocol: lambda
+      Region: !Ref Region
+      TopicArn: !Ref DeployStatusTopic
+    DependsOn:
+      - SlackRouterLambda
 
 # Rules
 
@@ -221,16 +206,18 @@ Resources:
         Variables:
           ArtifactBucket: !Ref ArtifactBucketName
           DeployBucket: !Ref DeploymentBucketName
+          StatusTopicArn: !Ref DeployStatusTopic
       Handler: deploy-lambda.handler
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.8
-      Timeout: 5
+      Timeout: 60
       Description: Deploys Artifacts to S3 Deploy Bucket
     DependsOn:
       - LambdaRole
+      - DeployStatusTopic
 
-  DeployLambdaPermission:
+  DeployLambdaCodeBuildEventTriggerPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: 'lambda:InvokeFunction'
@@ -254,18 +241,28 @@ Resources:
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.8
-      Timeout: 5
+      Timeout: 30
       Description: Sends Pipeline Slack Notifications
     DependsOn:
       - LambdaRole
 
-  SlackRouterLambdaPermission:
+  SlackRouterLambdaCodeBuildEventTriggerPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: 'lambda:InvokeFunction'
       FunctionName: !Ref SlackRouterLambda
       Principal: 'events.amazonaws.com'
       SourceArn: !GetAtt CodeBuildStateChangeRule.Arn
+    DependsOn:
+      - SlackRouterLambda
+
+  SlackRouterLambdaSNSTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref SlackRouterLambda
+      Principal: 'sns.amazonaws.com'
+      SourceArn: !Ref DeployStatusTopic
     DependsOn:
       - SlackRouterLambda
 
@@ -289,42 +286,23 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
+              - Sid: AllowLogging
+                Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
+              - Sid: AllowS3Access
+                Effect: Allow
+                Action:
+                  - 's3:*'
+                Resource:
+                  - !Sub arn:aws:s3:::${DeploymentBucketName}/*
+                  - !Sub arn:aws:s3:::${ArtifactBucketName}/*
               - Effect: Allow
                 Action:
-                  -  'logs:CreateLogStream'
-                  -  'logs:PutLogEvents'
+                  - 'iam:PassRole'
                 Resource: '*'
-#              - Effect: Allow
-#                Action:
-#                  - 'devicefarm:ListProjects'
-#                  - 'devicefarm:ListDevicePools'
-#                  - 'devicefarm:GetRun'
-#                  - 'devicefarm:GetUpload'
-#                  - 'devicefarm:CreateUpload'
-#                  - 'devicefarm:ScheduleRun'
-#                Resource: '*'
-#              - Effect: Allow
-#                Action:
-#                  - 'lambda:InvokeFunction'
-#                  - 'lambda:ListFunctions'
-#                Resource: '*'
-#              - Effect: Allow
-#                Action:
-#                  - 'iam:PassRole'
-#                Resource: '*'
-#              - Effect: Allow
-#                Action:
-#                  - 'ec2:*'
-#                  - 'elasticloadbalancing:*'
-#                  - 'autoscaling:*'
-#                  - 'cloudwatch:*'
-#                  - 's3:*'
-#                  - 'sns:*'
-#                  - 'cloudformation:*'
-#                  - 'rds:*'
-#                  - 'sqs:*'
-#                  - 'ecs:*'
-#                Resource: '*'
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -360,6 +338,12 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${DeploymentBucketName}/*
                   - !Sub arn:aws:s3:::${ArtifactBucketName}/*
+              - Sid: AllowSNSPublish
+                Effect: Allow
+                Action:
+                  - 'sns:Publish'
+                Resource:
+                  - '*'
       Path: "/"
 
   EventsRuleRole:
@@ -388,13 +372,33 @@ Resources:
                   - '*'
       Path: "/"
 
+  SNSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: static-sites-pipeline-sns-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sns.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: static-sites-pipeline-sns-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowLambdaInvoke
+                Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource:
+                  - '*'
+      Path: "/"
+
 
 Outputs:
   LatestTimeStamp:
     Value: !Ref TimeStamp
-#  StaticSitesArtifactStoreBucketName:
-#    Value: !Ref StaticSitesArtifactStoreBucket
-#  CodeBuildServiceRoleName:
-#    Value: !Ref StaticSitesCodeBuildServiceRole
-#  CodeBuildServiceRoleArn:
-#    Value: !GetAtt StaticSitesCodeBuildServiceRole.Arn
