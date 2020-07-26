@@ -11,12 +11,13 @@ steps and reports progress to a dedicated Slack channel.
 # Technologies Used:
 * AWS CloudFormation
 * AWS CodeBuild
-* AWS S3
-* AWS Lambda
+* AWS S3 
+* AWS Lambda 
 * AWS SNS (Simple Notification Service)
 * AWS IAM (Identity Access Management)
 * AWS EventBridge
 * AWS CloudWatch
+* AWS Secrets Manager
 * Python 3
 * YAML
 * Slack Webhooks
