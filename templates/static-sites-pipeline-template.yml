@@ -36,6 +36,9 @@ Parameters:
   SlackWebHookPath:
     Type: String
     Default: '{{resolve:secretsmanager:slack-webhook-paths:SecretString:static-sites-pipeline}}'
+  StaticSitesCdnId:
+    Type: String
+    Default: '{{resolve:ssm:static-sites-cdn-distribution-id:1}}'
 
 Resources:
 
@@ -90,21 +93,37 @@ Resources:
 
 # SNS
 
-  DeployStatusTopic:
+  PipelineStatusTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: Deploy Lambda Status Topic
-      TopicName: static-sites-deploy-lambda-sns-topic
+      DisplayName: Static Sites Pipeline Status Topic
+      TopicName: static-sites-pipeline-sns-topic
 
-  SlackRouterDeployStatusSubscription:
+  SlackRouterPipelineStatusSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: !GetAtt SlackRouterLambda.Arn
       Protocol: lambda
       Region: !Ref Region
-      TopicArn: !Ref DeployStatusTopic
+      TopicArn: !Ref PipelineStatusTopic
     DependsOn:
       - SlackRouterLambda
+
+  CacheInvalidationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Static Sites Pipeline Cache Invalidation Topic
+      TopicName: static-sites-pipeline-cache-invalidation-topic
+
+  CacheInvalidationLambdaTopicSubription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt CacheInvalidationLambda.Arn
+      Protocol: lambda
+      Region: !Ref Region
+      TopicArn: !Ref CacheInvalidationTopic
+    DependsOn:
+      - CacheInvalidationLambda
 
 # Rules
 
@@ -206,7 +225,8 @@ Resources:
         Variables:
           ArtifactBucket: !Ref ArtifactBucketName
           DeployBucket: !Ref DeploymentBucketName
-          StatusTopicArn: !Ref DeployStatusTopic
+          StatusTopicArn: !Ref PipelineStatusTopic
+          CacheInvalidationTopicArn: !Ref CacheInvalidationTopic
       Handler: deploy-lambda.handler
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
@@ -215,7 +235,7 @@ Resources:
       Description: Deploys Artifacts to S3 Deploy Bucket
     DependsOn:
       - LambdaRole
-      - DeployStatusTopic
+      - PipelineStatusTopic
 
   DeployLambdaCodeBuildEventTriggerPermission:
     Type: AWS::Lambda::Permission
@@ -256,15 +276,45 @@ Resources:
     DependsOn:
       - SlackRouterLambda
 
-  SlackRouterLambdaSNSTriggerPermission:
+  SlackRouterLambdaSnsTriggerPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: 'lambda:InvokeFunction'
       FunctionName: !Ref SlackRouterLambda
       Principal: 'sns.amazonaws.com'
-      SourceArn: !Ref DeployStatusTopic
+      SourceArn: !Ref PipelineStatusTopic
     DependsOn:
       - SlackRouterLambda
+
+  CacheInvalidationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref LambdasBucketName
+        S3Key: !Sub ${TimeStamp}/lambdas.zip
+      FunctionName: !Sub static-sites-pipeline-cache-invalidation-lambda-${TimeStamp}
+      Environment:
+        Variables:
+          StatusTopicArn: !Ref PipelineStatusTopic
+          StaticSitesCdnId: !Ref StaticSitesCdnId
+      Handler: cache-invalidation-lambda.handler
+      MemorySize: 128
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.8
+      Timeout: 5
+      Description: Triggers CloudFront Cache Invalidation After Deployment
+    DependsOn:
+      - LambdaRole
+
+  CacheInvalidationLambdaSnsTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref CacheInvalidationLambda
+      Principal: 'sns.amazonaws.com'
+      SourceArn: !Ref CacheInvalidationTopic
+    DependsOn:
+      - CacheInvalidationLambda
 
 # Roles
 
@@ -337,10 +387,16 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${DeploymentBucketName}/*
                   - !Sub arn:aws:s3:::${ArtifactBucketName}/*
-              - Sid: AllowSNSPublish
+              - Sid: AllowSnsPublish
                 Effect: Allow
                 Action:
                   - 'sns:Publish'
+                Resource:
+                  - '*'
+              - Sid: AllowCacheInvalidation
+                Effect: Allow
+                Action:
+                  - 'cloudfront:CreateInvalidation'
                 Resource:
                   - '*'
       Path: "/"

@@ -1,0 +1,29 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "46f62ddb-29f2-4fea-935c-5cd808650b2d",
+    "HTTPStatusCode": 201,
+    "HTTPHeaders": {
+      "x-amzn-requestid": "46f62ddb-29f2-4fea-935c-5cd808650b2d",
+      "location": "https://cloudfront.amazonaws.com/2019-03-26/distribution/E2PTD0PWXMAI3I/invalidation/IU21XVHKTDV44",
+      "content-type": "text/xml",
+      "content-length": "374",
+      "date": "Mon, 27 Jul 2020 21:01:51 GMT"
+    },
+    "RetryAttempts": 0
+  },
+  "Location": "https://cloudfront.amazonaws.com/2019-03-26/distribution/E2PTD0PWXMAI3I/invalidation/IU21XVHKTDV44",
+  "Invalidation": {
+    "Id": "IU21XVHKTDV44",
+    "Status": "InProgress",
+    "CreateTime": "datetime.datetime(2020,7,27,21,1,51,808000,tzinfo=tzlocal())",
+    "InvalidationBatch": {
+      "Paths": {
+        "Quantity": 1,
+        "Items": [
+          "/portfolio/*"
+        ]
+      },
+      "CallerReference": "1595883711.5575802"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:406135181037:static-sites-pipeline-cache-invalidation-topic:14e49080-3397-4e38-ab61-89117cec82fc",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "b172733a-3365-5484-9470-24a30b49057c",
+        "TopicArn": "arn:aws:sns:us-east-1:406135181037:static-sites-pipeline-cache-invalidation-topic",
+        "Subject": "Cache Invalidation Request from Deploy Lambda",
+        "Message": "{\"project\": \"portfolio\", \"message\": \"uploading portfolio complete. Event ID: ea6a50b5-a5c4-a14c-f20f-4f737de072a6\", \"event_id\": \"ea6a50b5-a5c4-a14c-f20f-4f737de072a6\"}",
+        "Timestamp": "2020-07-27T20:15:40.412Z",
+        "SignatureVersion": "1",
+        "Signature": "Y0Z2IoU4/E2v56TZduF+76W8YPg6vMipCMqV6cV117dXgPIOZ4OeroxiHDbGqAY52cH92EAhlPIZrmxB9OioVomXeHolkZ2q9cmSrsTQW+lI7icAdvAVp1b4LoSgv0oIahygQv8N6htmdxRiQFyXRXFGJ3PUv4ZSrHHM3+gq8NoXjg5tkIwYGavD6oj0hlKTA69pjJIPSeqhbC/bWzsDYo7rgGTmjo6+5GT3DCO/7KSJGhW45tgOq8Pv2y6HYsuswYZGD7MTe4nFa98PKhu/3OVvrQzwvRNRXUp2Ykda/XJMF44gy5D1LQQEFi5nC+u5zYpwTK2Pp4P9eQ+PT2OT5Q==",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-a86cb10b4e1f29c941702d737128f7b6.pem",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:406135181037:static-sites-pipeline-cache-invalidation-topic:14e49080-3397-4e38-ab61-89117cec82fc",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}
