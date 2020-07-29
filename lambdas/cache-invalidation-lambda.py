@@ -53,8 +53,8 @@ def handler(event, context):
         invalidation_request_id = invalidation['ResponseMetadata']['RequestId']
         invalidation_id = invalidation['Invalidation']['Id']
         if invalidation_http_code == 201:
-            message = Template('Cache Invalidation sent to CloudFront. Invalidation ID: $id Request ID: $request_id') \
-                .safe_substitute(id=invalidation_id, request_id=invalidation_request_id)
+            message = Template('Cache Invalidation sent to CloudFront. Invalidation ID: $id Path: $path') \
+                .safe_substitute(id=invalidation_id, path=path)
             status = 'IN_PROGRESS'
         else:
             message = Template('Cache Invalidation was sent. Status is unknown') \
