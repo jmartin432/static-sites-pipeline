@@ -212,6 +212,50 @@ Resources:
           Status: ENABLED
       TimeoutInMinutes: 5
 
+  SpaceBlobManCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: spaceblobman-codebuild
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      BadgeEnabled: false
+      Description: SpaceBlobMan CodeBuild
+      Source:
+        Auth:
+          Type: OAUTH
+        BuildSpec: buildspec.yml
+        GitCloneDepth: 0
+        GitSubmodulesConfig:
+          FetchSubmodules: false
+        InsecureSsl: false
+        Location: https://github.com/jmartin432/spaceblobman.git
+        ReportBuildStatus: false
+        SourceIdentifier: spaceblobman_source
+        Type: GITHUB
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        ImagePullCredentialsType: CODEBUILD
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+      QueuedTimeoutInMinutes: 5
+      Artifacts:
+        ArtifactIdentifier: spaceblobman_artifacts
+        EncryptionDisabled: false
+        Location: !Ref ArtifactBucketName
+        Name: portfolio.zip
+        NamespaceType: NONE
+        Path: spaceblobman-artifacts
+        Packaging: ZIP
+        Type: S3
+      Triggers:
+        Webhook: true
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref PipelineLogGroup
+          StreamName: !Ref PortfolioBuildLogStream
+          Status: ENABLED
+      TimeoutInMinutes: 5
+
 # Lambdas
 
   DeployLambda:
