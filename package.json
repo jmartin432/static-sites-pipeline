@@ -1,7 +1,7 @@
 {
   "name": "static-site-pipeline",
   "version": "1.0.0",
-  "description": "AWS Code Pipeline for statics site deployment",
+  "description": "AWS CodePipeline for Static Site Deployment",
   "author": "Justin Martin <info@justinlmartin.com>",
   "private": true,
   "scripts": {

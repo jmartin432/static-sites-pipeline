@@ -284,10 +284,10 @@ Resources:
         ImagePullCredentialsType: CODEBUILD
         Type: LINUX_CONTAINER
         PrivilegedMode: true
-        EnvironmentVariables:
-          - Name: VUE_APP_GOOGLE_MAPS_API_KEY
-            Type: String
-            Value: !Ref GoogMapsApiKey
+#        EnvironmentVariables:
+#          - Name: VUE_APP_GOOGLE_MAPS_API_KEY
+#            Type: SECRETS_MANAGER
+#            Value: '{{resolve:secretsmanager:google-maps-api:SecretString:key}}'
       QueuedTimeoutInMinutes: 5
       Artifacts:
         ArtifactIdentifier: sunrise_sunset_artifacts
@@ -447,6 +447,11 @@ Resources:
                 Action:
                   - 'iam:PassRole'
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetSecretValue'
+                Resource: '*'
+
 
   LambdaRole:
     Type: AWS::IAM::Role

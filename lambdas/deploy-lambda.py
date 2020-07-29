@@ -87,9 +87,9 @@ def handler(event, context):
     try:
         with zipfile.ZipFile(artifact_zip) as this_zip:
             for object_name in this_zip.namelist():
-                if 'src/' in upload_key:
+                if 'src/' in object_name:
                     upload_key = app_name + '/' + object_name.replace('src/', '', 1)
-                elif 'dist/' in upload_key:
+                elif 'dist/' in object_name:
                     upload_key = app_name + '/' + object_name.replace('dist/', '', 1)
                 this_object = this_zip.open(object_name)
                 deployment_bucket.upload_fileobj(this_object, upload_key,
