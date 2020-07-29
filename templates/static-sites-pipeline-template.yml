@@ -39,6 +39,9 @@ Parameters:
   StaticSitesCdnId:
     Type: String
     Default: '{{resolve:ssm:static-sites-cdn-distribution-id:1}}'
+  GoogMapsApiKey:
+    Type: String
+    Default: '{{resolve:secretsmanager:google-maps-api:SecretString:key}}'
 
 Resources:
 
@@ -281,6 +284,10 @@ Resources:
         ImagePullCredentialsType: CODEBUILD
         Type: LINUX_CONTAINER
         PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: VUE_APP_GOOGLE_MAPS_API_KEY
+            Type: String
+            Value: !Ref GoogMapsApiKey
       QueuedTimeoutInMinutes: 5
       Artifacts:
         ArtifactIdentifier: sunrise_sunset_artifacts
