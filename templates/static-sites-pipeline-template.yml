@@ -242,7 +242,7 @@ Resources:
         ArtifactIdentifier: spaceblobman_artifacts
         EncryptionDisabled: false
         Location: !Ref ArtifactBucketName
-        Name: portfolio.zip
+        Name: spaceblobman.zip
         NamespaceType: NONE
         Path: spaceblobman-artifacts
         Packaging: ZIP
