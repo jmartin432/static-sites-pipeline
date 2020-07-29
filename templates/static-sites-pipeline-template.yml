@@ -256,6 +256,50 @@ Resources:
           Status: ENABLED
       TimeoutInMinutes: 5
 
+  SunriseSunsetCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: sunrise-sunset-codebuild
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      BadgeEnabled: false
+      Description: SunriseSunset CodeBuild
+      Source:
+        Auth:
+          Type: OAUTH
+        BuildSpec: buildspec.yml
+        GitCloneDepth: 0
+        GitSubmodulesConfig:
+          FetchSubmodules: false
+        InsecureSsl: false
+        Location: https://github.com/jmartin432/sunrise-sunset.git
+        ReportBuildStatus: false
+        SourceIdentifier: sunrise_sunset_source
+        Type: GITHUB
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        ImagePullCredentialsType: CODEBUILD
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+      QueuedTimeoutInMinutes: 5
+      Artifacts:
+        ArtifactIdentifier: sunrise_sunset_artifacts
+        EncryptionDisabled: false
+        Location: !Ref ArtifactBucketName
+        Name: sunrise-sunset.zip
+        NamespaceType: NONE
+        Path: sunrise-sunset-artifacts
+        Packaging: ZIP
+        Type: S3
+      Triggers:
+        Webhook: true
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref PipelineLogGroup
+          StreamName: !Ref PortfolioBuildLogStream
+          Status: ENABLED
+      TimeoutInMinutes: 5
+
 # Lambdas
 
   DeployLambda:
