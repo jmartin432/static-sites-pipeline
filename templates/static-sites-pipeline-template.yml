@@ -14,10 +14,6 @@ Parameters:
     Description: github branch name
     Type: String
     Default: master
-  RepositoryName:
-    Description: github repository name
-    Type: String
-    Default: portfolio
   GitHubOwner:
     Type: String
     Default: jmartin432
@@ -287,7 +283,7 @@ Resources:
 #        EnvironmentVariables:
 #          - Name: VUE_APP_GOOGLE_MAPS_API_KEY
 #            Type: SECRETS_MANAGER
-#            Value: '{{resolve:secretsmanager:google-maps-api:SecretString:key}}'
+#            Value: !Ref GoogMapsApiKey
       QueuedTimeoutInMinutes: 5
       Artifacts:
         ArtifactIdentifier: sunrise_sunset_artifacts
@@ -315,7 +311,8 @@ Resources:
       Code:
         S3Bucket: !Ref LambdasBucketName
         S3Key: !Sub ${TimeStamp}/lambdas.zip
-      FunctionName: !Sub static-sites-pipeline-deploy-lambda-${TimeStamp}
+#      FunctionName: !Sub static-sites-pipeline-deploy-lambda-${TimeStamp}
+      FunctionName: static-sites-pipeline-deploy-lambda
       Environment:
         Variables:
           ArtifactBucket: !Ref ArtifactBucketName
@@ -348,7 +345,8 @@ Resources:
       Code:
         S3Bucket: !Ref LambdasBucketName
         S3Key: !Sub ${TimeStamp}/lambdas.zip
-      FunctionName: !Sub static-sites-pipeline-slack-router-lambda-${TimeStamp}
+#      FunctionName: !Sub static-sites-pipeline-slack-router-lambda-${TimeStamp}
+      FunctionName: static-sites-pipeline-slack-router-lambda
       Environment:
         Variables:
           SlackWebHookPath: !Ref SlackWebHookPath
@@ -387,7 +385,8 @@ Resources:
       Code:
         S3Bucket: !Ref LambdasBucketName
         S3Key: !Sub ${TimeStamp}/lambdas.zip
-      FunctionName: !Sub static-sites-pipeline-cache-invalidation-lambda-${TimeStamp}
+#      FunctionName: !Sub static-sites-pipeline-cache-invalidation-lambda-${TimeStamp}
+      FunctionName: static-sites-pipeline-cache-invalidation-lambda
       Environment:
         Variables:
           StatusTopicArn: !Ref PipelineStatusTopic
@@ -449,7 +448,7 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action:
-                  - 'secretsmanager:GetSecretValue'
+                  - 'ssm:GetParameters'
                 Resource: '*'
 
 

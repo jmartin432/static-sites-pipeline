@@ -65,6 +65,6 @@ def handler(event, context):
         message = Template('Error sending cache invalidation request. Check the logs') \
             .safe_substitute()
         status = 'FAILED'
-    publish_slack_sns(status_topic, project, status, message)
+    publish_slack_sns(status_topic, project.upper(), status, message)
 
     return
