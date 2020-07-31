@@ -37,7 +37,7 @@ Parameters:
     Default: '{{resolve:secretsmanager:slack-webhook-paths:SecretString:static-sites-pipeline}}'
   StaticSitesCdnDevId:
     Type: String
-    Default: '{{resolve:ssm:static-sites-cdn-dev-id:1}}'
+    Default: '{{resolve:ssm:static-sites-cdn-dev-id:2}}'
   StaticSitesCdnProdId:
     Type: String
     Default: '{{resolve:ssm:static-sites-cdn-prod-id:1}}'
@@ -297,10 +297,6 @@ Resources:
         ImagePullCredentialsType: CODEBUILD
         Type: LINUX_CONTAINER
         PrivilegedMode: true
-#        EnvironmentVariables:
-#          - Name: VUE_APP_GOOGLE_MAPS_API_KEY
-#            Type: SECRETS_MANAGER
-#            Value: !Ref GoogMapsApiKey
       QueuedTimeoutInMinutes: 5
       Artifacts:
         ArtifactIdentifier: sunrise_sunset_artifacts
@@ -405,8 +401,8 @@ Resources:
       Environment:
         Variables:
           StatusTopicArn: !Ref PipelineStatusTopic
-          StaticSitesCdnDevId: !Ref StaticSitesCdnDevId
-          StaticSitesCdnProdId: !Ref StaticSitesCdnProdId
+          CdnDevId: !Ref StaticSitesCdnDevId
+          CdnProdId: !Ref StaticSitesCdnProdId
       Handler: cache-invalidation-lambda.handler
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn

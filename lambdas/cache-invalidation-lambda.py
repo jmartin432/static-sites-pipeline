@@ -37,9 +37,9 @@ def handler(event, context):
     app_name = sns_message['app-name']
     environment = sns_message['environment']
     if environment == 'prod':
-        distribution_id = os.environ['StaticSitesCdnProdId']
+        distribution_id = os.environ['CdnProdId']
     else:
-        distribution_id = os.environ['StaticSitesCdnDevId']
+        distribution_id = os.environ['CdnDevId']
 
     path = ['/' + app_name + '/*']
     client = boto3.client('cloudfront')
