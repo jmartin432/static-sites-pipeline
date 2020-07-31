@@ -41,9 +41,6 @@ Parameters:
   StaticSitesCdnProdId:
     Type: String
     Default: '{{resolve:ssm:static-sites-cdn-prod-id:1}}'
-  GoogMapsApiKey:
-    Type: String
-    Default: '{{resolve:secretsmanager:google-maps-api:SecretString:key}}'
 
 Resources:
 
