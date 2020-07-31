@@ -32,10 +32,10 @@ def publish_slack_sns(topic, project, status, message, event_id):
     return
 
 
-def publish_cache_invalidation_sns(topic, project, message, event_id):
+def publish_cache_invalidation_sns(topic, app_name, environment, event_id):
     sns_message = {
-        'project': project,
-        'message': message,
+        'app-name': app_name,
+        'environment': environment,
         'event_id': event_id,
         'timestamp': time.strftime("%a, %d %b %Y %H:%M:%SZ", time.localtime())
     }
@@ -50,17 +50,13 @@ def publish_cache_invalidation_sns(topic, project, message, event_id):
     return
 
 
+# noinspection PyUnresolvedReferences
 def handler(event, context):
     logger.info(Template('Received event: $event').safe_substitute(event=event))
-    # logger.info(Template('Received event from CodeBuild, project: $project, id: $event_id')
-    #             .safe_substitute(project=project, event_id=event_id))
+
     sns = boto3.resource('sns')
     status_topic = sns.Topic(os.environ['StatusTopicArn'])
     invalidate_topic = sns.Topic(os.environ['CacheInvalidationTopicArn'])
-
-    s3 = boto3.resource('s3')
-    artifacts_bucket = s3.Bucket(os.environ['ArtifactBucket'])
-    deployment_bucket = s3.Bucket(os.environ['DeployBucket'])
 
     if 'id' in event:
         event_id = event['id']
@@ -81,6 +77,13 @@ def handler(event, context):
             .safe_substitute(app=app_name.upper(), env=environment.upper(), event_id=event_id)
 
     publish_slack_sns(status_topic, app_name.upper(), 'IN_PROGRESS', message, event_id)
+
+    s3 = boto3.resource('s3')
+    artifacts_bucket = s3.Bucket(os.environ['ArtifactBucket'])
+    if environment == 'dev':
+        deployment_bucket = s3.Bucket(os.environ['DeployBucketDev'])
+    else:
+        deployment_bucket = s3.Bucket(os.environ['DeployBucketProd'])
 
     artifact_key = artifact_path + '/' + artifact_name
     artifact_zip = io.BytesIO()
@@ -119,11 +122,11 @@ def handler(event, context):
         publish_slack_sns(status_topic, app_name.upper(), 'FAILED', message, event_id)
         return
 
-    message = Template('Uploading $app complete. Event ID: $event_id') \
+    slack_message = Template('Uploading $app complete. Event ID: $event_id') \
         .safe_substitute(app=app_name.upper(), event_id=event_id)
-    logger.info(message)
+    logger.info(slack_message)
     publish_slack_sns(status_topic, app_name.upper(), 'SUCCEEDED', message, event_id)
-    publish_cache_invalidation_sns(invalidate_topic, app_name, message, event_id)
+    publish_cache_invalidation_sns(invalidate_topic, app_name, environment, event_id)
     return
 
 

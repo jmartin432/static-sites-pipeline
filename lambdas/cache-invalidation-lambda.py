@@ -28,15 +28,20 @@ def publish_slack_sns(topic, project, status, message):
     return
 
 
+# noinspection PyUnresolvedReferences
 def handler(event, context):
     logger.info(event)
     sns = boto3.resource('sns')
     status_topic = sns.Topic(os.environ['StatusTopicArn'])
-    distribution_id = os.environ['StaticSitesCdnId']
     sns_message = json.loads(event['Records'][0]['Sns']['Message'])
-    project = sns_message['project']
+    app_name = sns_message['app-name']
+    environment = sns_message['environment']
+    if environment == 'prod':
+        distribution_id = os.environ['StaticSitesCdnProdId']
+    else:
+        distribution_id = os.environ['StaticSitesCdnDevId']
 
-    path = ['/' + project + '/*']
+    path = ['/' + app_name + '/*']
     client = boto3.client('cloudfront')
     status = ''
     try:
@@ -50,11 +55,12 @@ def handler(event, context):
                                                   })
         logger.info(invalidation)
         invalidation_http_code = invalidation['ResponseMetadata']['HTTPStatusCode']
-        invalidation_request_id = invalidation['ResponseMetadata']['RequestId']
         invalidation_id = invalidation['Invalidation']['Id']
         if invalidation_http_code == 201:
-            message = Template('Cache Invalidation sent to CloudFront. Invalidation ID: $id Path: $path') \
-                .safe_substitute(id=invalidation_id, path=path)
+            message = Template('Cache Invalidation sent to CloudFront. Environment: $environment, Distribution ID: '
+                               '$distribution_id, Invalidation ID: $invalidation_id Path: $path') \
+                .safe_substitute(environment=environment.upper(), distribution_id=distribution_id,
+                                 invalidation_id=invalidation_id, path=path)
             status = 'IN_PROGRESS'
         else:
             message = Template('Cache Invalidation was sent. Status is unknown') \
@@ -65,6 +71,7 @@ def handler(event, context):
         message = Template('Error sending cache invalidation request. Check the logs') \
             .safe_substitute()
         status = 'FAILED'
-    publish_slack_sns(status_topic, project.upper(), status, message)
+
+    publish_slack_sns(status_topic, app_name.upper(), status, message)
 
     return

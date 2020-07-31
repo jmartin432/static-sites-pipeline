@@ -8,9 +8,7 @@
     "test": "mocha",
     "updateStack": "sh scripts/update-stack.sh",
     "createStack": "sh scripts/create-stack.sh",
-    "deleteStack": "sh scripts/delete-stack.sh",
-    "describeStack": "sh scripts/describeStack.sh",
-    "uploadFiles": "sh scripts/uploadFiles.sh"
+    "deleteStack": "sh scripts/delete-stack.sh"
   },
   "dependencies": {},
   "devDependencies": {

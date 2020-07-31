@@ -23,18 +23,24 @@ Parameters:
   ArtifactBucketName:
     Type: String
     Default: '{{resolve:ssm:static-sites-pipeline-artifacts-bucket:1}}'
-  DeploymentBucketName:
+  DeploymentBucketDevName:
     Type: String
-    Default: '{{resolve:ssm:static-sites-pipeline-deployment-bucket:1}}'
+    Default: '{{resolve:ssm:static-sites-pipeline-deployment-dev-bucket:1}}'
+  DeploymentBucketProdName:
+    Type: String
+    Default: '{{resolve:ssm:static-sites-pipeline-deployment-prod-bucket:1}}'
   LambdasBucketName:
     Type: String
     Default: '{{resolve:ssm:static-sites-pipeline-lambdas-bucket:1}}'
   SlackWebHookPath:
     Type: String
     Default: '{{resolve:secretsmanager:slack-webhook-paths:SecretString:static-sites-pipeline}}'
-  StaticSitesCdnId:
+  StaticSitesCdnDevId:
     Type: String
-    Default: '{{resolve:ssm:static-sites-cdn-distribution-id:1}}'
+    Default: '{{resolve:ssm:static-sites-cdn-dev-id:1}}'
+  StaticSitesCdnProdId:
+    Type: String
+    Default: '{{resolve:ssm:static-sites-cdn-prod-id:1}}'
   GoogMapsApiKey:
     Type: String
     Default: '{{resolve:secretsmanager:google-maps-api:SecretString:key}}'
@@ -54,10 +60,21 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
 
-  DeploymentBucket:
+  DeploymentBucketDev:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref DeploymentBucketName
+      BucketName: !Ref DeploymentBucketDevName
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  DeploymentBucketProd:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref DeploymentBucketProdName
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -311,12 +328,12 @@ Resources:
       Code:
         S3Bucket: !Ref LambdasBucketName
         S3Key: !Sub ${TimeStamp}/lambdas.zip
-#      FunctionName: !Sub static-sites-pipeline-deploy-lambda-${TimeStamp}
       FunctionName: static-sites-pipeline-deploy-lambda
       Environment:
         Variables:
           ArtifactBucket: !Ref ArtifactBucketName
-          DeployBucket: !Ref DeploymentBucketName
+          DeployBucketDev: !Ref DeploymentBucketDevName
+          DeployBucketProd: !Ref DeploymentBucketProdName
           StatusTopicArn: !Ref PipelineStatusTopic
           CacheInvalidationTopicArn: !Ref CacheInvalidationTopic
       Handler: deploy-lambda.handler
@@ -324,7 +341,7 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.8
       Timeout: 30
-      Description: Deploys Artifacts to S3 Deploy Bucket
+      Description: Deploys Artifacts to S3 Deploy Buckets
     DependsOn:
       - LambdaRole
       - PipelineStatusTopic
@@ -345,7 +362,6 @@ Resources:
       Code:
         S3Bucket: !Ref LambdasBucketName
         S3Key: !Sub ${TimeStamp}/lambdas.zip
-#      FunctionName: !Sub static-sites-pipeline-slack-router-lambda-${TimeStamp}
       FunctionName: static-sites-pipeline-slack-router-lambda
       Environment:
         Variables:
@@ -385,12 +401,12 @@ Resources:
       Code:
         S3Bucket: !Ref LambdasBucketName
         S3Key: !Sub ${TimeStamp}/lambdas.zip
-#      FunctionName: !Sub static-sites-pipeline-cache-invalidation-lambda-${TimeStamp}
       FunctionName: static-sites-pipeline-cache-invalidation-lambda
       Environment:
         Variables:
           StatusTopicArn: !Ref PipelineStatusTopic
-          StaticSitesCdnId: !Ref StaticSitesCdnId
+          StaticSitesCdnDevId: !Ref StaticSitesCdnDevId
+          StaticSitesCdnProdId: !Ref StaticSitesCdnProdId
       Handler: cache-invalidation-lambda.handler
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
@@ -440,7 +456,8 @@ Resources:
                 Action:
                   - 's3:*'
                 Resource:
-                  - !Sub arn:aws:s3:::${DeploymentBucketName}/*
+                  - !Sub arn:aws:s3:::${DeploymentBucketDevName}/*
+                  - !Sub arn:aws:s3:::${DeploymentBucketProdName}/*
                   - !Sub arn:aws:s3:::${ArtifactBucketName}/*
               - Effect: Allow
                 Action:
@@ -484,7 +501,8 @@ Resources:
                 Action:
                   - s3:*
                 Resource:
-                  - !Sub arn:aws:s3:::${DeploymentBucketName}/*
+                  - !Sub arn:aws:s3:::${DeploymentBucketDevName}/*
+                  - !Sub arn:aws:s3:::${DeploymentBucketProdName}/*
                   - !Sub arn:aws:s3:::${ArtifactBucketName}/*
               - Sid: AllowSnsPublish
                 Effect: Allow
@@ -556,3 +574,7 @@ Resources:
 Outputs:
   LatestTimeStamp:
     Value: !Ref TimeStamp
+  DeployBucketDevDomainName:
+    Value: !GetAtt DeploymentBucketDev.DomainName
+  DeployBucketProdDomainName:
+    Value: !GetAtt DeploymentBucketProd.DomainName
