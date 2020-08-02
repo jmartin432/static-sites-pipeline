@@ -102,7 +102,31 @@ Resources:
     Type: AWS::Logs::LogStream
     Properties:
       LogGroupName: !Ref PipelineLogGroup
-      LogStreamName: static-sites-portfolio-codebuild-log-stream
+      LogStreamName: portfolio-codebuild-log-stream
+
+  SpaceBlobManBuildLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref PipelineLogGroup
+      LogStreamName: spaceblobman-codebuild-log-stream
+
+  SunriseSunsetBuildLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref PipelineLogGroup
+      LogStreamName: sunrise-sunset-codebuild-log-stream
+
+  PeaksValleysBuildLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref PipelineLogGroup
+      LogStreamName: peaks-valleys-codebuild-log-stream
+
+  SunflowerSynthBuildLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref PipelineLogGroup
+      LogStreamName: sunflower-synth-codebuild-log-stream
 
 # SNS
 
@@ -265,7 +289,7 @@ Resources:
       LogsConfig:
         CloudWatchLogs:
           GroupName: !Ref PipelineLogGroup
-          StreamName: !Ref PortfolioBuildLogStream
+          StreamName: !Ref SpaceBlobManBuildLogStream
           Status: ENABLED
       TimeoutInMinutes: 5
 
@@ -309,7 +333,7 @@ Resources:
       LogsConfig:
         CloudWatchLogs:
           GroupName: !Ref PipelineLogGroup
-          StreamName: !Ref PortfolioBuildLogStream
+          StreamName: !Ref SunriseSunsetBuildLogStream
           Status: ENABLED
       TimeoutInMinutes: 5
 
@@ -353,7 +377,51 @@ Resources:
       LogsConfig:
         CloudWatchLogs:
           GroupName: !Ref PipelineLogGroup
-          StreamName: !Ref PortfolioBuildLogStream
+          StreamName: !Ref PeaksValleysBuildLogStream
+          Status: ENABLED
+      TimeoutInMinutes: 5
+
+  SunflowerSynthCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: sunflower-synth-codebuild
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      BadgeEnabled: false
+      Description: Sunflower Synth CodeBuild
+      Source:
+        Auth:
+          Type: OAUTH
+        BuildSpec: buildspec.yml
+        GitCloneDepth: 0
+        GitSubmodulesConfig:
+          FetchSubmodules: false
+        InsecureSsl: false
+        Location: https://github.com/jmartin432/sunflower-synth.git
+        ReportBuildStatus: false
+        SourceIdentifier: sunflower_synth_source
+        Type: GITHUB
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        ImagePullCredentialsType: CODEBUILD
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+      QueuedTimeoutInMinutes: 5
+      Artifacts:
+        ArtifactIdentifier: sunflower_synth_artifacts
+        EncryptionDisabled: false
+        Location: !Ref ArtifactBucketName
+        Name: sunflower-synth.zip
+        NamespaceType: NONE
+        Path: sunflower-synth-artifacts
+        Packaging: ZIP
+        Type: S3
+      Triggers:
+        Webhook: true
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref PipelineLogGroup
+          StreamName: !Ref SunflowerSynthBuildLogStream
           Status: ENABLED
       TimeoutInMinutes: 5
 

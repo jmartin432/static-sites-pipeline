@@ -106,6 +106,8 @@ def handler(event, context):
             for object_name in this_zip.namelist():
                 if 'src/' in object_name:
                     upload_key = app_name + '/' + object_name.replace('src/', '', 1)
+                elif 'public/' in object_name:
+                    upload_key = app_name + '/' + object_name.replace('public/', '', 1)
                 elif 'dist/' in object_name:
                     upload_key = app_name + '/' + object_name.replace('dist/', '', 1)
                 this_object = this_zip.open(object_name)
