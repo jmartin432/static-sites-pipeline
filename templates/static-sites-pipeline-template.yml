@@ -535,7 +535,7 @@ Resources:
     Properties:
       Code:
         S3Bucket: !Ref LambdasBucketName
-        S3Key: !Sub ${TimeStamp}/lambdas.zip
+        S3Key: !Sub ${TimeStamp}/deploy-lambda.zip
       FunctionName: static-sites-pipeline-deploy-lambda
       Environment:
         Variables:
@@ -569,7 +569,7 @@ Resources:
     Properties:
       Code:
         S3Bucket: !Ref LambdasBucketName
-        S3Key: !Sub ${TimeStamp}/lambdas.zip
+        S3Key: !Sub ${TimeStamp}/slack-router-lambda.zip
       FunctionName: static-sites-pipeline-slack-router-lambda
       Environment:
         Variables:
@@ -608,7 +608,7 @@ Resources:
     Properties:
       Code:
         S3Bucket: !Ref LambdasBucketName
-        S3Key: !Sub ${TimeStamp}/lambdas.zip
+        S3Key: !Sub ${TimeStamp}/cache-invalidation-lambda.zip
       FunctionName: static-sites-pipeline-cache-invalidation-lambda
       Environment:
         Variables:

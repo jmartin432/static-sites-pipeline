@@ -4,9 +4,7 @@ import logging
 import os
 from string import Template
 import time
-
-from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
+import requests
 
 webhook_base = "https://hooks.slack.com/services"
 webhook_path = os.environ['SlackWebHookPath']
@@ -42,22 +40,16 @@ def send_slack_message(this_id, header, details, color):
 
     url = Template('$base$path').safe_substitute(base=webhook_base, path=webhook_path)
     json_message = json.dumps(slack_message).encode('utf-8')
-    req = Request(url, json_message)
 
     try:
-        response = urlopen(req)
-        response.read()
-        message = Template('Message posted to slack channel. Event ID: $event_id') \
-            .safe_substitute(event_id=this_id)
-        logger.info(message)
-    except HTTPError as e:
-        message = Template('Slack request failed: $code $reason') \
-            .safe_substitute(code=e.code, reason=e.reason)
-        logger.error(message)
-    except URLError as e:
-        message = Template('Server connection failed: $reason') \
-            .safe_substitute(reason=e.reason)
-        logger.error(message)
+        response = requests.put(
+            url,
+            data=json_message
+        )
+        print('Sent Slack Message successfully: {response}'.format(response=response))
+    except Exception as e:
+        print('Sending to Slack failed: {e}'.format(e=e))
+        raise
 
     return
 
