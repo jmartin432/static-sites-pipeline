@@ -265,7 +265,7 @@ Resources:
         Webhook: true
       LogsConfig:
         CloudWatchLogs:
-          GroupName: !Ref CodingPipelineLogGroup
+          GroupName: !Ref PipelineLogGroup
           StreamName: !Ref CodingPortfolioBuildLogStream
           Status: ENABLED
       TimeoutInMinutes: 5
