@@ -226,13 +226,13 @@ Resources:
 
 # CodeBuild
 
-  PortfolioCodeBuild:
+  CodingPortfolioCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: portfolio-codebuild
+      Name: coding-portfolio-codebuild
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       BadgeEnabled: false
-      Description: Portfolio CodeBuild
+      Description: Coding Portfolio CodeBuild
       Source:
         Auth:
           Type: OAUTH
@@ -241,9 +241,9 @@ Resources:
         GitSubmodulesConfig:
           FetchSubmodules: false
         InsecureSsl: false
-        Location: https://github.com/jmartin432/portfolio.git
+        Location: https://github.com/jmartin432/coding-portfolio.git
         ReportBuildStatus: false
-        SourceIdentifier: portfolio_source
+        SourceIdentifier: coding_portfolio_source
         Type: GITHUB
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
@@ -253,20 +253,20 @@ Resources:
         PrivilegedMode: true
       QueuedTimeoutInMinutes: 5
       Artifacts:
-        ArtifactIdentifier: portfolio_artifacts
+        ArtifactIdentifier: coding_portfolio_artifacts
         EncryptionDisabled: false
         Location: !Ref ArtifactBucketName
-        Name: portfolio.zip
+        Name: coding-portfolio.zip
         NamespaceType: NONE
-        Path: portfolio-artifacts
+        Path: coding-portfolio-artifacts
         Packaging: ZIP
         Type: S3
       Triggers:
         Webhook: true
       LogsConfig:
         CloudWatchLogs:
-          GroupName: !Ref PipelineLogGroup
-          StreamName: !Ref PortfolioBuildLogStream
+          GroupName: !Ref CodingPipelineLogGroup
+          StreamName: !Ref CodingPortfolioBuildLogStream
           Status: ENABLED
       TimeoutInMinutes: 5
 
