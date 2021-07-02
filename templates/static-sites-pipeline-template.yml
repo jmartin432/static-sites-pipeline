@@ -149,7 +149,14 @@ Resources:
       LogGroupName: !Ref PipelineLogGroup
       LogStreamName: landing-page-codebuild-log-stream
 
-# SNS
+  UnicornWarpBuildLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref PipelineLogGroup
+      LogStreamName: unicorn-warp-codebuild-log-stream
+
+
+  # SNS
 
   PipelineStatusTopic:
     Type: AWS::SNS::Topic
@@ -575,6 +582,50 @@ Resources:
         CloudWatchLogs:
           GroupName: !Ref PipelineLogGroup
           StreamName: !Ref LandingPageBuildLogStream
+          Status: ENABLED
+      TimeoutInMinutes: 5
+
+  UnicornWarpPageCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: unicorn-warp-codebuild
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      BadgeEnabled: false
+      Description: Unicorn Warp CodeBuild
+      Source:
+        Auth:
+          Type: OAUTH
+        BuildSpec: buildspec.yml
+        GitCloneDepth: 0
+        GitSubmodulesConfig:
+          FetchSubmodules: false
+        InsecureSsl: false
+        Location: https://github.com/jmartin432/unicorn-warp.git
+        ReportBuildStatus: false
+        SourceIdentifier: unicorn_warp_source
+        Type: GITHUB
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        ImagePullCredentialsType: CODEBUILD
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+      QueuedTimeoutInMinutes: 5
+      Artifacts:
+        ArtifactIdentifier: unicorn_warp_artifacts
+        EncryptionDisabled: false
+        Location: !Ref ArtifactBucketName
+        Name: unicorn-warp.zip
+        NamespaceType: NONE
+        Path: unicorn-warp-artifacts
+        Packaging: ZIP
+        Type: S3
+      Triggers:
+        Webhook: true
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref PipelineLogGroup
+          StreamName: !Ref UnicornWarpBuildLogStream
           Status: ENABLED
       TimeoutInMinutes: 5
 
