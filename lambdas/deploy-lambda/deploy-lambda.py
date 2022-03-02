@@ -51,7 +51,7 @@ def publish_cache_invalidation_sns(topic, app_name, environment, event_id):
 
 
 def handler(event, context):
-    logger.info('Received event: {event}'.format(event=event))
+    logger.info('Received event: {event}'.format(event=json.dumps(event)))
 
     sns = boto3.resource('sns')
     status_topic = sns.Topic(os.environ['StatusTopicArn'])
